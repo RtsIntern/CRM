@@ -1,0 +1,111 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title></title>
+    <link href="css/normalize.css" rel="stylesheet" />
+    <link rel="stylesheet" href="http://cdn.datatables.net/1.10.4/css/jquery.dataTables.min.css" />
+    <link href="http://fonts.googleapis.com/css?family=Open+Sans:400italic,700,300,800,400" rel="stylesheet" type="text/css" />
+    <link href="css/StyleSheet.css" rel="stylesheet" />    
+    <script type="text/javascript" src="http://code.jquery.com/jquery-1.11.2.min.js"></script>
+    <script src="js/jquery.watermark.min.js"></script>
+    <script type="text/javascript" src="http://cdn.datatables.net/1.10.4/js/jquery.dataTables.min.js"></script>
+    <script type="text/javascript">
+        $(document).ready(function () {
+       var table = $('#myTable').DataTable({
+                "ajax": {
+                    "url": 'http://localhost:8080/clients',
+                    "dataSrc": ""
+                },
+                "columns": [
+
+                    {  "data" : "name" },
+                    { "data" : "numContracts" },
+                    { "data" : null },
+                    {  "data" : "clientId" }
+                ],
+                "columnDefs":[ {
+                        "render": function(data, type, row){
+                            return '<a href="/contracts?clientId=' + row.clientId + '">' + row.name + '</a>';
+                },
+                        "targets": 0},
+
+                    {
+                        "targets": 2,
+                        "data": null,
+                        "defaultContent": "<button>Delete</button>"
+                    },
+
+                { "className": "dt-center", "targets": [0, 1, 2]},
+
+                { "visible": false,  "targets": [ 3 ] }]
+
+            }
+        );
+
+            $('#myTable tbody').on( 'click', 'button', function() {
+                var data = table.row( $(this).parents('tr') ).data();
+                var clientId = data.clientId;
+                var type = "client";
+                    $.post("/delete",
+                    {
+                        id: clientId,
+                        type: type
+                    }
+                )
+                setTimeout(function() {
+                    table.ajax.reload();
+                }, 50);
+            });
+
+            $('.addNewBtn').click(function () {
+                $('.addClientContainer').slideToggle();
+            });
+
+            $("#addClient").click(function() {
+                    var newClientName = document.getElementById("clientName").value;
+                    $.post("/addClient",
+                    {
+                        name: newClientName
+                    }
+                )
+                $('#clientName').val(null);
+                setTimeout(function() {
+                    table.ajax.reload();
+                }, 50);
+                });
+
+            $('#clientName').watermark('Enter the Client Name');
+        });
+    </script>
+</head>
+<body>
+    <!--Header-->
+    <div class="headerContainer">
+        <img src="images/logo.png" />
+    </div>
+    <div class="mainContainer">
+        <!--Content-->
+        <div class="breadCrumbs"><a href="/default.html">Home</a></div>
+        <div><a href="#" class="addNewBtn">Add New Client</a><h1>Clients</h1></div>
+        <div class="addClientContainer">
+            <input type="text" id="clientName" />
+            <button id="addClient">Add Client</button>
+        </div>
+        <div>
+            <table id="myTable" class="display" cellspacing="0" width="100%">
+                <thead>
+                    <tr>
+                        <th>Client Name</th>
+                        <th>Number of Contracts</th>
+                        <th>Delete</th>
+                        <th>Client Id</th>
+                    </tr>
+                </thead>            
+
+            </table>
+        </div>
+    </div>
+
+
+</body>
+</html>

@@ -1,0 +1,156 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title></title>
+    <link href="css/normalize.css" rel="stylesheet" />
+    <link rel="stylesheet" href="http://cdn.datatables.net/1.10.4/css/jquery.dataTables.min.css" />
+    <link href="http://fonts.googleapis.com/css?family=Open+Sans:400italic,700,300,800,400" rel="stylesheet" type="text/css" />
+    <link href="css/StyleSheet.css" rel="stylesheet" />    
+    <script type="text/javascript" src="http://code.jquery.com/jquery-1.11.2.min.js"></script>
+    <script type="text/javascript" src="js/querystring-0.9.0-min.js"></script>
+    <script src="js/jquery.watermark.min.js"></script>
+    <script type="text/javascript" src="http://cdn.datatables.net/1.10.4/js/jquery.dataTables.min.js"></script>
+    <script type="text/javascript">
+    var parentClient = null;
+    var clientId = $.QueryString("clientId");
+    var Url = "/getParentClient?clientId=" + clientId;
+    $.ajax({
+        url: Url,
+        type: 'get',
+        dataType: 'json',
+        async: false,
+        success: function(data) {
+            parentClient = data;
+        }
+    });
+
+
+
+    $(document).ready(function() {
+        var clientName = $.QueryString("clientName");
+
+        $('#contractName').watermark('Enter the Contract Title');
+        $('#contractDesc').watermark('Enter the Contract Description');
+        $('#clientTitle').text(parentClient.name);
+        $('#clientCrumb').text(parentClient.name);
+        var table = $('#myTable').DataTable({
+            "ajax": {
+                "url": 'http://localhost:8080/getContracts?clientId=' + clientId,
+                "dataSrc": ""
+            },
+            "columns": [
+
+                {
+                    "data": "name"
+                }, {
+                    "data": "contractNumber"
+                }, {
+                    "data": "startDate"
+                }, {
+                    "data": "endDate"
+                }, {
+                    "data": "profit"
+                }, {
+                    "data": "margin"
+                }, {
+                    "data": null
+                }, {
+                    "data": "contractId"
+                }
+            ],
+            "columnDefs": [{
+                "render": function(data, type, row) {
+                    return '<a href="/contract-details?contractId=' + row.contractId + '">' + row.name + '</a>';
+                },
+                "targets": 0
+            }, {
+                "targets": 6,
+                "data": null,
+                "defaultContent": "<button>Delete</button>"
+            }, {
+                "className": "dt-center",
+                "targets": [0, 1, 2, 3, 4, 5, 6]
+            }, {
+                "visible": false,
+                "targets": [7]
+            }]
+
+
+        });
+        $('#myTable tbody').on('click', 'button', function() {
+            var data = table.row($(this).parents('tr')).data();
+            var contractId = data.contractId;
+            var type = "contract";
+            $.post("/delete", {
+                id: contractId,
+                type: type
+            })
+            setTimeout(function() {
+                    table.ajax.reload();
+                }, 50);
+        });
+
+        $('.addNewBtn').click(function() {
+            $('.addClientContainer').slideToggle();
+        });
+
+            $("#addContract").click(function() {
+            var newContractName = document.getElementById("contractName").value;
+            var newContractDesc = document.getElementById("contractDesc").value;
+            var clientId = $.QueryString("clientId");
+            $.post("/addContract", {
+                name: newContractName,
+                desc: newContractDesc,
+                clientId: clientId
+            })
+            $('#contractName').val(null);
+            $('#contractDesc').val(null);
+            setTimeout(function() {
+                    table.ajax.reload();
+                }, 50);
+        });
+    });
+</script>
+</head>
+<body>
+     <!--Header-->
+    <div class="headerContainer">
+        <img src="images/logo.png" />
+    </div>
+    <div class="mainContainer">
+
+        <!--Content-->
+        <div class="breadCrumbs"><a href="/default">Home</a> | <a id="clientCrumb" href="#">Client Name</a></div>
+        <div>
+            <a href="#" class="addNewBtn">Add New Contract</a><h1 id="clientTitle">New Mexico Department of Transportation</h1>
+        </div>
+        <div class="addClientContainer">
+            <input id="contractName" type="text" />
+            <textarea id="contractDesc"></textarea>
+            <button id="addContract">Add Contract</button>
+            <script type="text/javascript">
+
+            </script>
+        </div>
+        <div>
+            <table id="myTable" class="display" cellspacing="0" width="100%">
+                <thead>
+                    <tr>
+                        <th>Contract Title</th>
+                        <th>Contract Number</th>
+                        <th>Start Date</th>
+                        <th>End Date</th>
+                        <th>Profit</th>
+                        <th>Margin</th>                    
+                        <th>Delete</th> 
+                        <th>ContractId</th>
+                    </tr>
+                </thead>            
+
+            </table>
+        </div>
+    </div>
+
+
+</body>
+</html>

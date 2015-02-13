@@ -1,0 +1,80 @@
+﻿* {-moz-box-sizing: border-box; box-sizing: border-box;}
+body {font-size: 12px; background:#fafafa; font-family: 'Open Sans', sans-serif;}
+
+h1 { font-weight: 300; font-size: 3em;}
+h3 span { display:block; font-size: 3em;}
+
+.headerContainer { background:#fff; text-align: center; -webkit-box-shadow: 0 0 30px 0 rgba(0,0,0,.3); box-shadow: 0 0 30px 0 rgba(0,0,0,.3); position:fixed; top: 0; left: 0; width: 100%;}
+
+.mainContainer { max-width: 1200px; min-width: 960px; margin: 0 auto; padding: 70px 0 20px 0;}
+
+.breadCrumbs { border-bottom: 1px solid #e5e5e5; padding-bottom: 10px; margin-bottom: 10px; color:#999;}
+.breadCrumbs a { color:#999; text-decoration: none;}
+
+.dataTables_filter { float:left !important; padding-bottom: 20px;}
+.dataTables_length { float:right !important; }
+
+.dataTable { background:#fff; border: 1px solid #e5e5e5; border-radius: 7px; -moz-border-radius: 7px; overflow: hidden; }
+table.dataTable.no-footer { border-bottom: 1px solid #e5e5e5; }
+    .dataTable th { background:#374249 !important; color:#aab4b5; font-size: 1.2em; padding: 20px 0 !important;}
+    .dataTable th.sorting_asc { color:#fff; background: url(../images/iconAsc.png) no-repeat 95% 50% #45a7b9 !important; border-bottom: 1px solid #45a7b9;}
+        .dataTable th.sorting_desc { color:#fff; background: url(../images/iconDesc.png) no-repeat 95% 50% #45a7b9 !important; border-bottom: 1px solid #45a7b9; }
+
+table.dataTable td:first-child { font-weight: bold;}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button.disabled:hover, .dataTables_wrapper .dataTables_paginate .paginate_button:hover,
+.dataTables_wrapper .dataTables_paginate .paginate_button.current:hover { background:#374249 !important; color:#fff !Important;}
+
+.addNewBtn { float:right; margin-bottom: 20px; background:#45a7b9; display: inline-block; padding: 10px 20px; color:#fff; border-radius: 7px; -moz-border-radius: 7px; text-decoration: none; margin-left: 40px;}
+
+.breakDownContainer { padding: 20px 0; border-top: 1px solid #ccc; border-bottom: 1px solid #ccc; margin-bottom: 20px;}
+
+a { color:#45a7b9; }
+
+.employeeTable td span { padding-right: 40px; padding-bottom: 5px; display: inline-block; }
+
+.addClientContainer { display:none; padding: 20px 0; border-top: 1px solid #e5e5e5; border-bottom: 1px solid #e5e5e5; margin: 20px 0;}    
+.addClientContainer button { }
+
+.addStaffBtnContainer { padding: 15px 0 0 0;}
+
+.staffTableContainer { padding: 20px 0; border-top: 1px solid #ccc; border-bottom: 1px solid #ccc; margin-bottom: 20px;}
+
+.borderBottom { padding-bottom: 20px;  margin-bottom: 20px; border-bottom: 1px solid #ccc;}
+
+/* Calendar Picker*/
+
+.ui-datepicker { width: 250px; background:#fff; font-size: 1em; position: relative; }
+    .ui-datepicker .ui-datepicker-prev { position: absolute; left: 5px; top:10px; cursor: pointer; color:#fff;}
+    .ui-datepicker .ui-datepicker-next { position: absolute; right: 5px; top:10px; cursor: pointer; color:#fff;}
+
+
+.ui-datepicker-title { text-align:center; padding: 10px 0; background: #374249; color:#fff;}
+.ui-datepicker-calendar { width: 100%;}
+    .ui-datepicker-calendar td { text-align: center; padding: 5px 0;}
+        .ui-datepicker-calendar td a { text-decoration:none;}
+        .ui-datepicker-calendar td.ui-datepicker-current-day, .ui-datepicker-calendar td.ui-datepicker-current-day a  { background:#374249; color:#fff;}
+.ui-datepicker-today { background:#f7f7f7;}
+
+.colContainer::after {content: "";  display: table;  clear: both; }
+.sixtyseven { width: 66.66666666%; float:left; padding: 10px;}
+.thirtythree { width: 33.3333333%; float:left; padding: 10px;}
+.fifty { width: 50%; float:left; padding: 10px;}
+
+.padding10 { padding: 10px;}
+.paddingV20 { padding: 20px 0; }
+.paddingBot20 { padding: 0 0 20px 0;}
+
+.breakDownTable { width: 100%;}
+    .breakDownTable td, .breakDownTable th { padding: 7px; border-bottom: 1px solid #ccc;}    
+    .breakDownTable td { text-align: right;}
+    .breakDownTable td:first-child { text-align:left;} 
+    .breakDownTable td:last-child { text-align:center;} 
+
+input[type="text"] {width: 100%; display: inline-block; border: 1px solid #ccc; margin-bottom: 10px; padding:10px;}
+input[type="file"] { clear:both; display:block; margin-bottom: 10px;}
+textarea { width: 100%; display: inline-block; border: 1px solid #ccc; margin-bottom: 10px; padding:10px; height: 80px; }
+
+.left { text-align: left;}
+.center { text-align: center;}
+.right { text-align: right;}

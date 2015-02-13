@@ -1,0 +1,301 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title></title>
+    <link href="css/normalize.css" rel="stylesheet" />
+    <link rel="stylesheet" href="http://cdn.datatables.net/1.10.4/css/jquery.dataTables.min.css" />
+    <link href="css/StyleSheet.css" rel="stylesheet" />
+    <link href="http://fonts.googleapis.com/css?family=Open+Sans:400italic,700,300,800,400" rel="stylesheet" type="text/css" />
+    <script type="text/javascript" src="http://code.jquery.com/jquery-1.11.2.min.js"></script>
+    <script src="http://code.jquery.com/ui/1.11.2/jquery-ui.js"></script>
+    <script type="text/javascript" src="http://cdn.datatables.net/1.10.4/js/jquery.dataTables.min.js"></script>
+    <script type="text/javascript" src="js/querystring-0.9.0-min.js"></script>
+    <script src="http://code.highcharts.com/highcharts.js"></script>
+    <script src="http://code.highcharts.com/modules/exporting.js"></script>
+    <script src="js/jquery.watermark.min.js"></script>
+    <script type="text/javascript">
+  // <![CDATA[
+
+    var contractDeliverableId = $.QueryString("contractDeliverableId");
+    var parentContractDeliverable = null;
+    var url = "/getParentDeliverable?contractDeliverableId=" + contractDeliverableId;
+    $.ajax({
+        url: url,
+        type: 'get',
+        dataType: 'json',
+        async: false,
+        success: function(data) {
+            parentContractDeliverable = data;
+        }
+    });
+
+    var clientId = parentContractDeliverable.clientId;
+    url = "/getParentClient?clientId=" + clientId;
+    var parentClient = null;
+    $.ajax({
+        url: url,
+        type: 'get',
+        dataType: 'json',
+        async: false,
+        success: function(data) {
+            parentClient = data;
+        }
+    });
+
+
+    var contractId = parentContractDeliverable.contractId;
+    url = "/getParentContract?contractId=" + contractId;
+    var parentContract = null;
+    $.ajax({
+        url: url,
+        type: 'get',
+        dataType: 'json',
+        async: false,
+        success: function(data) {
+            parentContract = data;
+        }
+    });
+
+
+
+    $(document).ready(function() {
+        $('#contractCrumb').text(parentContract.name);
+        var contractCrumbLink = '/contract-details?contractId=' + contractId;
+        $('#contractCrumb').attr("href", contractCrumbLink);
+            $('#clientCrumb').text(parentClient.name);
+            var clientCrumbLink = '/contracts?clientId=' + clientId;
+            $('#clientCrumb').attr("href", clientCrumbLink);
+
+        $('#deliverableTitle').watermark('Enter the Deliverable Title');
+        $('#deliverableTitle').val(parentContractDeliverable.deliverableName);
+        $('#deliverableName').text(parentContractDeliverable.deliverableName);
+        $('#deliverableCrumb').text(parentContractDeliverable.deliverableName);
+
+        $('#deliverableDescription').watermark('Enter the Deliverable Description');
+        if (parentContractDeliverable.description.length > 0)
+        {
+           $('#deliverableDescription').val(parentContractDeliverable.description);
+        }
+
+        $('#deliverableStartDate').watermark('Enter the Deliverable Start Date');
+        if (parentContractDeliverable.startDate.length > 0)
+        {
+            $('#deliverableStartDate').val(parentContractDeliverable.startDate);
+        }
+
+        $('#deliverableEndDate').watermark('Enter the Deliverable End Date');
+        if (parentContractDeliverable.endDate.length > 0)
+        {
+            $('#deliverableEndDate').val(parentContractDeliverable.endDate);
+        }
+
+        $('#deliverableContractHours').watermark('Enter the Deliverable Contract Hours');
+        if (parentContractDeliverable.quotedHours  > 0)
+        {
+            $('#deliverableContractHours').val(parentContractDeliverable.quotedHours);
+        }
+
+        $("#deliverableStartDate").datepicker();
+        $("#deliverableEndDate").datepicker();
+
+        $.post("/getEmployees", {
+                'name': name
+            },
+            function(data) {
+                var sel = $("#assignStaff");
+                sel.empty();
+                for (var i = 0; i < data.length; i++) {
+                    sel.append('<option value="' + data[i].employeeId + '">' + data[i].name + '</option>');
+                }
+            }, "json");
+
+
+        var table = $('#myTable').DataTable({
+            "ajax": {
+                "url": 'http://localhost:8080/assignedEmployees?contractDeliverableId=' + contractDeliverableId,
+                "dataSrc": ""
+            },
+            "columns": [
+
+                {
+                    "data": "name"
+                }, {
+                    "data": "rate"
+                }, {
+                    "data": "estimatedHours"
+                }, {
+                    "data": "actualHours"
+                }, {
+                    "data": null
+                }, {
+                    "data": null
+                }, {
+                    "data": "employeeId"
+                }
+            ],
+            "columnDefs": [
+
+                {
+                    "render": function(data, type, row) {
+                        return '<input id="estimatedHours' + row.employeeId + '" type="text" style="width: 150px" value="' + row.estimatedHours + '" />';
+                    },
+                    "targets": 2
+                },
+
+                {
+                    "render": function(data, type, row) {
+                        return '<input id="actualHours' + row.employeeId + '" type="text" style="width: 150px" value="' + row.actualHours + '" />';
+                    },
+                    "targets": 3
+                },
+
+                {
+                    "targets": 4,
+                    "data": null,
+                    "defaultContent": "<button>Update Hours</button>"
+                },
+
+                {
+                    "targets": 5,
+                    "data": null,
+                    "defaultContent": "<button>Remove</button>"
+                },
+
+
+                {
+                    "className": "dt-center",
+                    "targets": [0, 1, 2, 3, 4, 5]
+                },
+
+                {
+                    "visible": false,
+                    "targets": [6]
+                }
+            ]
+
+        });
+
+
+
+        $("#assignEmployeeButton").click(function() {
+            var employeeId = $("#assignStaff option:selected").val();
+            $.post("/assignEmployee", {
+                employeeId: employeeId,
+                contractDeliverableId: contractDeliverableId
+            })
+            setTimeout(function() {
+                table.ajax.reload();
+            }, 1000);
+        });
+
+        $('#myTable tbody').on('click', 'button', function() {
+            var row = table.row($(this).parents('tr'))
+            var data = row.data();
+            var employeeId = data.employeeId;
+            var action = this.outerText;
+            if (action == "Remove") {
+                $.post("/deleteContractDeliverable_Employee", {
+                    employeeId: employeeId,
+                    contractDeliverableId: contractDeliverableId
+                })
+                setTimeout(function() {
+                    table.ajax.reload();
+                }, 50);
+            }
+            if (action == "Update Hours") {
+                var updatedActualHours = document.getElementById("actualHours" + employeeId);
+                var updatedEstimatedHours = document.getElementById("estimatedHours" + employeeId);
+                updatedActualHours = updatedActualHours.value;
+                updatedEstimatedHours = updatedEstimatedHours.value;
+                $.post("/updateHours", {
+                    updatedActualHours: updatedActualHours,
+                    updatedEstimatedHours: updatedEstimatedHours,
+                    contractDeliverableId: contractDeliverableId,
+                    employeeId: employeeId
+                })
+                setTimeout(function() {
+                    table.ajax.reload();
+                }, 50);
+                alert("Hours Updated");
+            }
+        });
+
+        $("#updateDeliverable").click(function() {
+
+            var newDeliverableTitle = document.getElementById("deliverableTitle").value;
+            var newDeliverableDescription = document.getElementById("deliverableDescription").value;
+            var newDeliverableStartDate = document.getElementById("deliverableStartDate").value;
+            var newDeliverableEndDate = document.getElementById("deliverableEndDate").value;
+            var newDeliverableHours = document.getElementById("deliverableContractHours").value;
+            $.post("/editDeliverable", {
+                id: contractDeliverableId,
+                name: newDeliverableTitle,
+                description: newDeliverableDescription,
+                startDate: newDeliverableStartDate,
+                endDate: newDeliverableEndDate,
+                contractHours: newDeliverableHours,
+                success: function(data) {
+                alert("Updated contract");
+                }
+            })
+            });
+    });
+          // ]]>
+    </script> 
+</head>
+<body>
+<!--Header-->
+<div class="headerContainer">
+    <img src="images/logo.png" />
+</div>
+<div class="mainContainer">
+    <!--Content-->
+    <div class="breadCrumbs"><a href="/default">Home</a> | <a id="clientCrumb" href="#">Sample Client Name</a> |
+        <a id="contractCrumb" href="#">Contract Title</a> | <a id="deliverableCrumb">Deliverable Details</a></div>
+    <div>
+        <h1 id="deliverableName">Deliverable Details</h1>
+    </div>
+    <div class="paddingBot20">
+        <div class="colContainer">
+            <div class="thirtythree">
+                <input type="text" id="deliverableTitle" />
+                <input type="text" id="deliverableDescription" />
+                <button id="updateDeliverable">Save Information</button>
+            </div>
+            <div class="thirtythree">
+                <input type="text" id="deliverableStartDate" />
+                <input type="text" id="deliverableEndDate" />
+            </div>
+            <div class="thirtythree">
+                <input type="text" id="deliverableContractHours" />
+            </div>
+        </div>
+        <div class="padding10">
+            <h3>Assign Staff:</h3>
+            <select id="assignStaff">
+            </select>
+            &nbsp; &nbsp; &nbsp; &nbsp; <!-- I literally have no idea how to HTML -->
+            <button id="assignEmployeeButton">Assign Employee</button>
+            <a href="/employees" target="_blank" class="addNewBtn">Manage Employees</a>
+        </div>
+    </div>
+    <div class="staffTableContainer">
+        <table id="myTable" class="display" cellspacing="0" width="100%">
+            <thead>
+            <tr>
+                <th>Employee</th>
+                <th>Rate</th>
+                <th>Estimated Hours</th>
+                <th>Actual Hours</th>
+                <th>Update</th>
+                <th>Remove</th>
+                <th>Employee ID</th>
+            </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    </div>
+</div>
+</body>
+</html>

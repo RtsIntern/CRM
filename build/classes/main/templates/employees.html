@@ -1,0 +1,162 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title></title>
+    <link href="css/normalize.css" rel="stylesheet" />
+    <link rel="stylesheet" href="http://cdn.datatables.net/1.10.4/css/jquery.dataTables.min.css" />
+    <link href="http://fonts.googleapis.com/css?family=Open+Sans:400italic,700,300,800,400" rel="stylesheet" type="text/css" />
+    <link href="css/StyleSheet.css" rel="stylesheet" />    
+    <script type="text/javascript" src="http://code.jquery.com/jquery-1.11.2.min.js"></script>
+    <script src="js/jquery.watermark.min.js"></script>
+    <script type="text/javascript" src="http://cdn.datatables.net/1.10.4/js/jquery.dataTables.min.js"></script>
+    <script type="text/javascript">
+        // <![CDATA[
+        $(document).ready(function () {
+            var table = $('#myTable').DataTable({
+                "ajax": {
+                    "url": 'http://localhost:8080/getEmployees',
+                    "dataSrc": ""
+                },
+                "columns": [
+
+                    {  "data" : "name" },
+                    { "data" : "hourlyRate" },
+                    { "data" : null },
+                    { "data" : null },
+                    {  "data" : "employeeId" }
+                ],
+                "columnDefs":[
+
+                {
+                    "render": function ( data, type, row ) {
+                        return '<input id="name' + row.employeeId + '" type="text" value="' + row.name + '" />';
+                    },
+                    "targets": 0
+                },
+                {
+                    "render": function ( data, type, row ) {
+                        return '<input id="rate' + row.employeeId + '" type="text" value="' + row.hourlyRate + '" />';
+                    },
+                    "targets": 1
+                },
+
+                {
+                        "targets": 2,
+                        "data": null,
+                        "defaultContent": "<button>Update</button>"
+                    },
+                    {
+                        "targets": 3,
+                        "data": null,
+                        "defaultContent": "<button>Delete</button>"
+                    },
+
+
+                { "className": "dt-center", "targets": [0, 1, 2, 3]},
+
+                { "visible": false,  "targets": [ 4 ] }]
+
+            }
+        );
+
+$('#myTable tbody').on( 'click', 'button', function() {
+                var row = table.row( $(this).parents('tr') )
+                var data = row.data();
+                var employeeId = data.employeeId;
+                var action = this.outerText;
+                if (action == "Delete") {
+                    var type = "employee";
+                        $.post("/delete",
+                        {
+                            id: employeeId,
+                            type: type
+                        }
+                    )
+                    setTimeout(function() {
+                        table.ajax.reload();
+                    }, 50);
+                }
+                if (action == "Update") {
+                    var newName = "";
+                    var newHourlyRate = "";
+                    var updatedName = document.getElementById("name" + employeeId);
+                    var updatedRate = document.getElementById("rate" + employeeId);
+                    updatedName = updatedName.value;
+                    updatedRate = updatedRate.value
+                     $.post("/editEmployee",
+                    {
+                        name: updatedName,
+                        rate: updatedRate,
+                        employeeId: employeeId
+                    }
+                    )
+                    setTimeout(function() {
+                    table.ajax.reload();
+                }, 50);
+                alert("Employee Updated");
+                }
+            });
+
+
+            $("#addEmployee").click(function() {
+                    var newEmployeeName = document.getElementById("employeeName").value;
+                    var newEmployeeRate = document.getElementById("employeeRate").value;
+                    $.post("/addEmployee",
+                    {
+                        name: newEmployeeName,
+                        rate: newEmployeeRate
+                    }
+                )
+                $('#employeeName').val(null);
+                $('#employeeRate').val(null);
+                setTimeout(function() {
+                    table.ajax.reload();
+                }, 50);
+                });
+
+            $('.addNewBtn').click(function () {
+                $('.addClientContainer').slideToggle();
+            });
+
+            $('#employeeName').watermark('Enter the Employee Name');
+            $('#employeeRate').watermark('Enter the Employee Hourly Rate');
+        });
+        // ]]>
+    </script>
+</head>
+<body>
+    <!--Header-->
+    <div class="headerContainer">
+        <img src="images/logo.png" />
+    </div>
+    <div class="mainContainer">
+        <!--Content-->
+        <div class="breadCrumbs"></div>
+        <div><a href="#" class="addNewBtn">Add New Employee</a><h1>Employees</h1></div>
+        <div class="addClientContainer">            
+            <input type="text" id="employeeName" />
+            <input type="text" id="employeeRate" />
+            <button id="addEmployee">Add Employee</button>
+        </div>
+        <div>
+            <table id="myTable" class="display" cellspacing="0" width="100%">
+                <thead>
+                    <tr>
+                        <th>Employee Name</th>
+                        <th>Hourly Rate</th>
+                        <th>Update</th>
+                        <th>Delete</th>
+						<th>Employee ID</th>
+                    
+                    </tr>
+                </thead>            
+                <tbody>
+                                                           
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+
+</body>
+</html>

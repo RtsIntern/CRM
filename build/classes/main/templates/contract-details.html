@@ -1,0 +1,437 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+<title></title>
+<link href="css/normalize.css" rel="stylesheet" />
+<link rel="stylesheet" href="http://cdn.datatables.net/1.10.4/css/jquery.dataTables.min.css" />
+<link href="css/StyleSheet.css" rel="stylesheet" />
+<link href="http://fonts.googleapis.com/css?family=Open+Sans:400italic,700,300,800,400" rel="stylesheet" type="text/css" />
+<script type="text/javascript" src="http://code.jquery.com/jquery-1.11.2.min.js"></script>
+<script src="http://code.jquery.com/ui/1.11.2/jquery-ui.js"></script>
+<script type="text/javascript" src="http://cdn.datatables.net/1.10.4/js/jquery.dataTables.min.js"></script>
+<script src="http://code.highcharts.com/highcharts.js"></script>
+<script type="text/javascript" src="js/querystring-0.9.0-min.js"></script>
+<script src="http://code.highcharts.com/modules/exporting.js"></script>
+<script src="js/jquery.watermark.min.js"></script>
+<script type="text/javascript">
+        // <![CDATA[
+
+        // We can start doing this stuff before the page loads
+        // Pull some info from the URL.
+        var contractId = $.QueryString("contractId");
+
+        // Use ajax to get the details from the contract we're looking at right now.
+        var parentContract = null;
+        var Url = "/getParentContract?contractId=" + contractId;
+        $.ajax({
+            url: Url,
+            type: 'get',
+            dataType: 'json',
+            async: false,
+            success: function(data) {
+                parentContract = data;
+            }
+        });
+
+        // Use the clientId from the current contract to download the parent client.
+        // Probably a better idea to store the parentClient's name in the database instead, so we don't
+        // have to make so many queries and ajax calls.
+        var clientId = parentContract.clientId;
+        var parentClient = null;
+        var Url = "/getParentClient?clientId=" + clientId;
+        $.ajax({
+            url: Url,
+            type: 'get',
+            dataType: 'json',
+            async: false,
+            success: function(data) {
+                parentClient = data;
+            }
+        });
+        $(document).ready(function() {
+
+            // Do all of the quick, easy stuff first.
+            $('#contractTitleInput').val(parentContract.name);
+            $('#contractTitleInput').watermark('Enter the Contract Title');
+
+            // Some of this gets hairy because of the way Javascript and Java treat null, undefined,
+            // and empty strings. I tried to fix this by setting everything to "" on the server if
+            // a value is not supplied, but haven't had a chance to check if that all works. These
+            // checks are just to be safe.
+            if (parentContract.contractNumber !== undefined) {
+                if (parentContract.contractNumber.length > 0) {
+                    $('#contractNumberInput').val(parentContract.contractNumber);
+                }
+            } else {
+                $('#contractNumberInput').removeAttr('value');
+            }
+            $('#contractNumberInput').watermark('Enter the Contract Number');
+
+            if (parentContract.startDate !== undefined) {
+                if (parentContract.startDate.length > 0) {
+                    $('#contractStartDateInput').val(parentContract.startDate);
+                }
+            } else {
+                $('#contractStartDate').removeAttr('value');
+            }
+
+            $('#contractStartDateInput').watermark('Enter the Contract Start Date');
+
+            if (parentContract.endDate !== undefined) {
+                $('#contractEndDateInput').val(parentContract.endDate);
+            }
+
+            $('#contractEndDateInput').watermark('Enter the Contract End Date');
+
+
+            if (parentContract.hourlyRate !== undefined) {
+                if (parentContract.hourlyRate > 0) {
+                    $('#contractLaborRateInput').val(parentContract.hourlyRate);
+                }
+            } else {
+                $('#contractLaborRateInput').removeAttr('value');
+            }
+            $('#contractLaborRateInput').watermark('Enter the Contract Hourly Rate');
+            $('#deliverableName').watermark('Enter the Deliverable Name');
+
+            $('#contractTitle').text(parentContract.name);
+            $('#contractDescription').text(parentContract.description);
+            $('#contractCrumb').text(parentContract.name);
+            $('#clientCrumb').text(parentClient.name);
+            var clientCrumbLink = '/contracts?clientId=' + parentClient.clientId;
+            $('#clientCrumb').attr("href", clientCrumbLink);
+
+            // Variables to add up the totals of all the deliverables
+            var totalProfit = 0;
+            var contractAmount = 0;
+            var actualAmount = 0;
+
+            // Get the contract deliverables to put in the first table
+            $.ajax({
+                url: '/getContractDeliverables?contractId=' + contractId,
+                type: 'POST',
+                dataType: 'json',
+
+                success: function(response) {
+                    var trHTML = '';
+
+
+                    $.each(response, function(i, item) {
+
+                        // Change the color of the table row based on the value profitOrLoss. If it's positive,
+                        // make it green. If it's negative, make it red. If it's 0, leave it black.
+                        var color = "";
+                        if (item.profitOrLoss < 0) {
+                            color = ' style="color:red"';
+                        }
+                        if (item.profitOrLoss == 0) {
+                            color = ' style="color:black"';
+                        }
+                        if (item.profitOrLoss > 0) {
+                            color = ' style="color:green"';
+                        }
+
+                        // Generate HTML code to append to the table down below.
+                        trHTML += '<tr' + color + '><td style="text-align:center">' + item.deliverableName + '</td><td style="text-align:center">$' + item.quotedPrice + '</td><td style="text-align:center">$' + item.totalCost + '</td><td style="text-align:center">$' + item.profitOrLoss + '</td><td style="text-align:center">' + item.profitMargin + '%</td></tr>';
+
+                        // Add up the totals
+                        totalProfit += item.profitOrLoss;
+                        contractAmount += item.quotedPrice;
+                        actualAmount += item.totalCost;
+                    });
+                    // Add our generated HTML to the table
+                    $('#breakDown').append(trHTML);
+
+                    // Math to get the contract margin
+                    contractMargin = totalProfit / contractAmount;
+                    contractMargin = contractMargin * 100;              // *100 because it's a percent
+
+                    // Round to the nearest integer. Not exact, but I think that's okay
+                    contractMargin = Math.round(contractMargin);
+                    $('#margin').text(contractMargin + "%");
+                    $('#profitOrLoss').text("$" + totalProfit);
+
+                    // Change the color of the profit. This uses the same tests as above. Probably a better idea
+                    // to set color above to "red" "green" or "black" and use it down here, but I don't have time to
+                    // change that.
+                    if (totalProfit > 0) {
+                        $('#profitOrLoss').css({
+                            'color': 'green'
+                        });
+                        $('#margin').css({
+                            'color': 'green'
+                        });
+                    } else if (totalProfit < 0) {
+                        $('#profitOrLoss').css({
+                            'color': 'red'
+                        });
+                        $('#margin').css({
+                            'color': 'red'
+                        });
+                    } else {
+                        $('#profitOrLoss').css({
+                            'color': 'black'
+                        });
+                        $('#margin').css({
+                            'color': 'black'
+                        });
+                    }
+$(function () {
+                $('#container').highcharts({
+                    chart: {
+                        type: 'column',
+                        backgroundColor: 'rgba(255, 255, 255, 0)'
+                    },
+                    title: {
+                        text: ' '
+                    },
+                    xAxis: {
+
+                        labels:
+                        {
+                            enabled: false
+                        }
+                    },
+                    yAxis: {
+                        min: 0,
+                        title: {
+                            text: 'Cost'
+                        }
+                    },
+                    tooltip: {
+
+                    },
+                    plotOptions: {
+                        column: {
+                            pointPadding: 0.2,
+                            borderWidth: 0
+                        }
+                    },
+                    series: [{
+                        name: 'Total Cost',
+                        data: [totalProfit]
+
+                    }, {
+                        name: 'Actual Cost',
+                        data: [actualAmount]
+
+
+                    }]
+                });
+            });
+                }
+            });
+
+            // Another ajax call to get the contract deliverables. Is it possible to reuse the data from the first call?
+            // It doesn't really affect performance because the calls are made simultaneously/independently.
+            var table = $('#myTable').DataTable({
+                "ajax": {
+                    "url": 'http://localhost:8080/getContractDeliverables?contractId=' + contractId,
+                    "dataSrc": ""
+                },
+                "columns": [
+
+                    {
+                        "data": "deliverableName"
+                    }, {
+                        "data": "startDate"
+                    }, {
+                        "data": "endDate"
+                    }, {
+                        "data": "quotedHours"
+                    }, {
+                        "data": "estimatedHours"
+                    }, {
+                        "data": "actualHours"
+                    }, {
+                        "data": null
+                    }, {
+                        "data": "contractDeliverableId"
+                    }
+                ],
+                "columnDefs": [{
+                    "render": function(data, type, row) {
+                        return '<a href="/contract-deliverables?contractDeliverableId=' + row.contractDeliverableId + '">' + row.deliverableName + '</a>';
+                    },
+                    "targets": 0
+                }, {
+                    "targets": 6,
+                    "data": null,
+                    "defaultContent": "<button>Delete</button>"
+                }, {
+                    "className": "dt-center",
+                    "targets": [0, 1, 2, 3, 4, 5, 6]
+                }, {
+                    "visible": false,
+                    "targets": [7]
+                }]
+
+
+            });
+
+            $('#myTable tbody').on('click', 'button', function() {
+                var data = table.row($(this).parents('tr')).data();
+                var deliverableId = data.contractDeliverableId;
+                var type = "deliverable";
+                $.post("/delete", {
+                    id: deliverableId,
+                    type: type
+                })
+                // Another thing that could be better. Wait 50 milliseconds, then refresh the table. I tried using
+                // "success:" but that gets called as soon as the data gets handed off to the server, which is before
+                // the server finishes the sql update. I haven't seen this fail yet, but there must be a way to wait
+                // for a server response or something.
+                setTimeout(function() {
+                    table.ajax.reload();
+                }, 50);
+            });
+
+
+
+            $("#contractStartDateInput").datepicker();
+            $("#contractEndDateInput").datepicker();
+            $('.addNewBtn').click(function() {
+                $('.addClientContainer').slideToggle();
+            });
+
+            $("#addDeliverable").click(function() {
+                var deliverableName = document.getElementById("deliverableName").value;
+                $.post("/addDeliverable", {
+                    name: deliverableName,
+                    clientId: clientId,
+                    contractId: contractId,
+                    contractHourlyRate: parentContract.hourlyRate
+                })
+                $('#deliverableName').val(null);
+
+                // Another thing that could be better. Wait 50 milliseconds, then refresh the table. I tried using
+                // "success:" but that gets called as soon as the data gets handed off to the server, which is before
+                // the server finishes the sql update. I haven't seen this fail yet, but there must be a way to wait
+                // for a server response or something.
+                setTimeout(function() {
+                    table.ajax.reload();
+                }, 50);
+            });
+
+            $("#updateContract").click(function() {
+
+                var newContractTitle = document.getElementById("contractTitleInput").value;
+                var newContractNumber = document.getElementById("contractNumberInput").value;
+                var newContractStartDate = document.getElementById("contractStartDateInput").value;
+                var newContractEndDate = document.getElementById("contractEndDateInput").value;
+                var newContractHourlyRate = document.getElementById("contractLaborRateInput").value;
+                $.post("/updateContract", {
+                    contractId: contractId,
+                    contractTitle: newContractTitle,
+                    contractNumber: newContractNumber,
+                    contractStartDate: newContractStartDate,
+                    contractEndDate: newContractEndDate,
+                    contractHourlyRate: newContractHourlyRate,
+                    clientId: clientId,
+                    success: function() {
+                        alert("Updated contract");
+                    }
+                })
+            });
+        });
+        // ]]>
+    </script>
+</head>
+
+<body>
+<!--Header-->
+<div class="headerContainer">
+    <img src="images/logo.png" />
+</div>
+<div class="mainContainer">
+    <!--Header-->
+    <div></div>
+
+    <!--Content-->
+    <div class="breadCrumbs"><a href="/default">Home</a> | <a id="clientCrumb" href="#">Sample Client Name</a> | <a id="contractCrumb">Current Contracts</a>
+    </div>
+    <div>
+        <h1 id="contractTitle">Contract Title</h1>
+        <p id="contractDescription"></p>
+    </div>
+    <div class="paddingV20">
+        <div class="colContainer">
+            <div class="thirtythree">
+                <input type="text" id="contractTitleInput" />
+                <input type="text" id="contractNumberInput" />
+                <button id="updateContract">Save Information</button>
+            </div>
+            <div class="thirtythree">
+                <input type="text" id="contractStartDateInput" />
+                <input type="text" id="contractEndDateInput" />
+            </div>
+            <div class="thirtythree">
+                <input type="text" id="contractLaborRateInput" />
+                <input type="file" id="contractUploadInput" value="Upload Contract" />
+            </div>
+        </div>
+        <script>
+                $('#contractTitleInput').text(decodeURI($.QueryString("contractTitle")));
+            </script>
+    </div>
+    <div class="breakDownContainer">
+        <div class="colContainer">
+            <h2>Breakdown:</h2>
+            <div class="sixtyseven">
+
+                <div class="colContainer">
+                    <div class="fifty">
+                        <h3>Contract Profit/Loss: <span id="profitOrLoss"></span></h3>
+                    </div>
+                    <div class="fifty">
+                        <h3>Contract Margin: <span id="margin"></span></h3>
+                    </div>
+                </div>
+                <table id="breakDown" class="breakDownTable" cellspacing="0">
+                    <thead>
+                    <tr>
+                        <th>Deliverable</th>
+                        <th>Contract Amount</th>
+                        <th>Actual Amount</th>
+                        <th>Profit/Loss</th>
+                        <th>Profit Margin</th>
+                    </tr>
+                    </thead>
+
+                </table>
+            </div>
+            <div class="thirtythree">
+                <div id="container" style="width: 100%; height: auto; margin: 0 auto"></div>
+            </div>
+        </div>
+    </div>
+    <div class="borderBottom">
+        <a id="toggleDeliverable" class="addNewBtn">Add a New Deliverable</a>
+        <h2>Deliverables:</h2>
+        <div class="addClientContainer">
+            <input type="text" id="deliverableName" />
+            <button id="addDeliverable">Add Deliverable</button>
+        </div>
+
+        <table id="myTable" class="display" cellspacing="0" width="100%">
+            <thead>
+            <tr>
+                <th>Deliverable</th>
+                <th>Start Date</th>
+                <th>End Date</th>
+                <th>Contract Hours</th>
+                <th>Estimated Hours</th>
+                <th>Actual Hours</th>
+                <th>Delete</th>
+            </tr>
+            </thead>
+            <tbody>
+
+            </tbody>
+        </table>
+    </div>
+</div>
+</body>
+
+</html>
